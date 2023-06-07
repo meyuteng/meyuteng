@@ -226,13 +226,11 @@ preinstall_l2tp(){
     mypsk="66yk.cc"
     username="66yk66yk"
     password="66yk66yk"
-    echo "ServerIP:${IP}"
-    echo "Server Local IP:${iprange}.1"
-    echo "Client Remote IP Range:${iprange}.2-${iprange}.254"
-    echo "PSK:${mypsk}"
-    echo
-    echo "Press any key to start... or press Ctrl + C to cancel."
-    char=`get_char`
+    echo "服务器:${IP}"
+    echo "用户名:${username}"
+    echo "密码:${password}"
+    echo "预设密钥:${mypsk}"
+    echo "开始安装"
 
 }
 
