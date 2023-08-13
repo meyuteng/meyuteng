@@ -24,8 +24,8 @@
 # - All values MUST be placed inside 'single quotes'
 # - DO NOT use these special characters within values: \ " '
 
-YOUR_USERNAME='66yk'
-YOUR_PASSWORD='66yk'
+YOUR_USERNAME='123'
+YOUR_PASSWORD='123'
 
 # Important notes:   https://git.io/vpnnotes
 # Setup VPN clients: https://git.io/vpnclients
