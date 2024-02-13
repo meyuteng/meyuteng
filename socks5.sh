@@ -31,6 +31,29 @@ warn() {
     echo -e "\n$is_warn $@\n"
 }
 
+
+# fhq he wget
+distro=$(cat /etc/os-release | grep -oP '^NAME="\K[^"]+')
+if [[ $distro =~ "Ubuntu" || $distro =~ "Debian" ]]; then
+  ufw disable
+  apt install wget -y
+  echo "UFW firewall disabled"
+elif [[ $distro =~ "CentOS" || $distro =~ "Fedora" ]]; then
+  systemctl stop firewalld
+  systemctl disable firewalld
+  yum install wget -y
+  echo "Firewalld firewall stopped and disabled"
+elif [[ $distro =~ "RHEL" ]]; then
+  service iptables stop
+  chkconfig iptables off
+  echo "iptables firewall stopped and disabled"
+else
+  echo "Unsupported distribution: $distro"
+  exit 1
+fi
+
+
+
 # root
 [[ $EUID != 0 ]] && err "当前非 ${yellow}ROOT用户.${none}"
 
