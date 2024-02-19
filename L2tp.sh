@@ -36,10 +36,40 @@ YOUR_PASSWORD='123'
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 SYS_DT=$(date +%F-%T | tr ':' '_')
 
+
+# fhq he wget
+distro=$(cat /etc/os-release | grep -oP '^NAME="\K[^"]+')
+if [[ $distro =~ "Ubuntu" || $distro =~ "Debian" ]]; then
+  ufw disable
+  apt install wget -y
+  echo "UFW firewall disabled"
+elif [[ $distro =~ "CentOS" || $distro =~ "Fedora" ]]; then
+  systemctl stop firewalld
+  systemctl disable firewalld
+  yum install wget -y
+  echo "Firewalld firewall stopped and disabled"
+elif [[ $distro =~ "RHEL" ]]; then
+  service iptables stop
+  chkconfig iptables off
+  echo "iptables firewall stopped and disabled"
+else
+  echo "Unsupported distribution: $distro"
+  exit 1
+fi
+
+
+
+
+
+
 exiterr()  { echo "Error: $1" >&2; exit 1; }
 exiterr2() { exiterr "'apt-get install' failed."; }
 conf_bk() { /bin/cp -f "$1" "$1.old-$SYS_DT" 2>/dev/null; }
 bigecho() { echo; echo "## $1"; echo; }
+
+
+
+
 
 check_ip() {
   IP_REGEX='^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$'
