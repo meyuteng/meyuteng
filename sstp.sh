@@ -1,8 +1,7 @@
 #!/bin/bash
-
 # 检查参数
-if [ "$#" -ne 4 ] || [ "\$1" != "--username" ] || [ "\$3" != "--password" ]; then
-    echo "Usage: \$0 --username <username> --password <password>"
+if [ "$#" -ne 2 ]; then
+    echo "Usage: \$0 <username> <password>"
     exit 1
 fi
 
