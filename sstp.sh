@@ -1,12 +1,13 @@
 #!/bin/bash
+
 # 检查参数
 if [ "$#" -ne 2 ]; then
     echo "Usage: \$0 <username> <password>"
     exit 1
 fi
 
-USERNAME=\$2
-PASSWORD=\$4
+USERNAME=\$1
+PASSWORD=\$2
 
 # 获取公网 IP 地址
 PUBLIC_IP=$(curl -s ifconfig.me)
@@ -44,13 +45,9 @@ plugin sstp-pppd-plugin.so
 sstp-sock /var/run/sstp-client/sstp-client.sock
 EOF
 
-# 启动并启用 pptpd 服务
+# 启动 SSTP 服务
 sudo systemctl enable pptpd
 sudo systemctl start pptpd
-
-# 启动并启用 sstp-client 服务
-sudo systemctl enable sstp-client
-sudo systemctl start sstp-client
 
 # 输出配置信息
 echo "SSTP 服务已配置完成。"
