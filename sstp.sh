@@ -1,35 +1,35 @@
 #!/bin/bash
 
-# ¼ì²é²ÎÊı
-if [ "$#" -ne 2 ]; then
-    echo "Usage: \$0 <username> <password>"
+# æ£€æŸ¥å‚æ•°
+if [ "$#" -ne 4 ] || [ "\$1" != "--username" ] || [ "\$3" != "--password" ]; then
+    echo "Usage: \$0 --username <username> --password <password>"
     exit 1
 fi
 
-USERNAME=\$1
-PASSWORD=\$2
+USERNAME=\$2
+PASSWORD=\$4
 
-# »ñÈ¡¹«Íø IP µØÖ·
+# è·å–å…¬ç½‘ IP åœ°å€
 PUBLIC_IP=$(curl -s ifconfig.me)
 
-# ¸üĞÂÏµÍ³°ü
+# æ›´æ–°ç³»ç»ŸåŒ…
 sudo apt-get update
 sudo apt-get upgrade -y
 
-# °²×°±ØÒªµÄÒÀÀµ
+# å®‰è£…å¿…è¦çš„ä¾èµ–
 sudo apt-get install -y ppp openssl pptpd
 
-# °²×° SSTP ·şÎñ¶Ë
+# å®‰è£… SSTP æœåŠ¡ç«¯
 sudo apt-get install -y sstp-client
 
-# ÅäÖÃ SSTP ·şÎñ¶Ë
+# é…ç½® SSTP æœåŠ¡ç«¯
 sudo tee /etc/ppp/chap-secrets > /dev/null <<EOF
 # Secrets for authentication using CHAP
 # client    server  secret          IP addresses
 $USERNAME    sstp    $PASSWORD        *
 EOF
 
-# ÅäÖÃ SSTP ·şÎñ
+# é…ç½® SSTP æœåŠ¡
 sudo tee /etc/ppp/peers/sstp-client > /dev/null <<EOF
 pty "sstp-client --ipparam sstp --nolaunchpppd --remote-host $PUBLIC_IP --username $USERNAME --password $PASSWORD"
 name $USERNAME
@@ -45,17 +45,17 @@ plugin sstp-pppd-plugin.so
 sstp-sock /var/run/sstp-client/sstp-client.sock
 EOF
 
-# Æô¶¯²¢ÆôÓÃ pptpd ·şÎñ
+# å¯åŠ¨å¹¶å¯ç”¨ pptpd æœåŠ¡
 sudo systemctl enable pptpd
 sudo systemctl start pptpd
 
-# Æô¶¯²¢ÆôÓÃ sstp-client ·şÎñ
+# å¯åŠ¨å¹¶å¯ç”¨ sstp-client æœåŠ¡
 sudo systemctl enable sstp-client
 sudo systemctl start sstp-client
 
-# Êä³öÅäÖÃĞÅÏ¢
-echo "SSTP ·şÎñÒÑÅäÖÃÍê³É¡£"
-echo "ÓÃ»§Ãû: $USERNAME"
-echo "ÃÜÂë: $PASSWORD"
-echo "¹«Íø IP: $PUBLIC_IP"
-echo "ÇëÈ·±£·À»ğÇ½ÔÊĞí SSTP ¶Ë¿Ú (443) µÄÁ÷Á¿¡£"
+# è¾“å‡ºé…ç½®ä¿¡æ¯
+echo "SSTP æœåŠ¡å·²é…ç½®å®Œæˆã€‚"
+echo "ç”¨æˆ·å: $USERNAME"
+echo "å¯†ç : $PASSWORD"
+echo "å…¬ç½‘ IP: $PUBLIC_IP"
+echo "è¯·ç¡®ä¿é˜²ç«å¢™å…è®¸ SSTP ç«¯å£ (443) çš„æµé‡ã€‚"
