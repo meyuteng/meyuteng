@@ -12,10 +12,6 @@ PASSWORD=\$2
 # 获取公网 IP 地址
 PUBLIC_IP=$(curl -s ifconfig.me)
 
-# 更新系统包
-sudo apt-get update
-sudo apt-get upgrade -y
-
 # 安装必要的依赖
 sudo apt-get install -y ppp openssl pptpd
 
