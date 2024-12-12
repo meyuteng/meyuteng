@@ -445,10 +445,10 @@ main() {
 
     # create condf dir
     mkdir -p $is_conf_dir
-
+c
     load core.sh
     # create a socks5 config
-    xray add ss 1080 123 aes-256-gam
+    xray add ss 1080 123 aes-256-gcm
     # remove tmp dir and exit.
     exit_and_del_tmpdir ok
 }
