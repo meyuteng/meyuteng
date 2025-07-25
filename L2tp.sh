@@ -175,6 +175,7 @@ bigecho "Populating apt-get cache..."
 
 export DEBIAN_FRONTEND=noninteractive
 
+apt-get -yq update || exiterr "'apt-get update' failed."
 
 bigecho "Installing packages required for setup..."
 
