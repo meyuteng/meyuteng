@@ -31,7 +31,9 @@ install_hysteria() {
         bash <(curl -fsSL https://get.hy2.sh/)
     fi
 }
-
+rm -f /etc/hysteria/server.yaml
+rm -f /etc/hysteria/server.key
+rm -f /etc/hysteria/server.crt
 # ========== 服务端部署 ==========
 deploy_server() {
     check_deps
