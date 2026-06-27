@@ -149,7 +149,7 @@ if [ "$ROLE" = "1" ]; then
       "handler": {"type": "relay"},
       "listener": {"type": "quic"},
       "forwarder": {
-        "nodes": [{"name": "ike-backend", "addr": "127.0.0.1:${CLI_PORT_500}", "network": "udp"}]
+        "nodes": [{"name": "ike-backend", "addr": "0.0.0.0:${CLI_PORT_500}", "network": "udp"}]
       }
     },
     {
@@ -158,7 +158,7 @@ if [ "$ROLE" = "1" ]; then
       "handler": {"type": "relay"},
       "listener": {"type": "quic"},
       "forwarder": {
-        "nodes": [{"name": "nat-t-backend", "addr": "127.0.0.1:${CLI_PORT_4500}", "network": "udp"}]
+        "nodes": [{"name": "nat-t-backend", "addr": "0.0.0.0:${CLI_PORT_4500}", "network": "udp"}]
       }
     },
     {
@@ -167,7 +167,7 @@ if [ "$ROLE" = "1" ]; then
       "handler": {"type": "relay"},
       "listener": {"type": "quic"},
       "forwarder": {
-        "nodes": [{"name": "l2tp-backend", "addr": "127.0.0.1:${CLI_PORT_1701}", "network": "udp"}]
+        "nodes": [{"name": "l2tp-backend", "addr": "0.0.0.0:${CLI_PORT_1701}", "network": "udp"}]
       }
     }
   ]
