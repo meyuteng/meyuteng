@@ -43,7 +43,7 @@ deploy_server() {
         -keyout /etc/hysteria/server.key \
         -out /etc/hysteria/server.crt \
         -days 3650 -nodes \
-        -subj "/CN=www.google.com" 2>/dev/null
+        -subj "/CN=www.nintendo.com" 2>/dev/null
 
     # 配置文件
     cat > /etc/hysteria/server.yaml <<EOF
@@ -65,7 +65,7 @@ tun:
 masquerade:
   type: proxy
   proxy:
-    url: https://www.google.com
+    url: https://www.nintendo.com
     rewriteHost: true
 EOF
 
@@ -142,7 +142,7 @@ tun:
 masquerade:
   type: proxy
   proxy:
-    url: https://www.google.com
+    url: https://www.nintendo.com
     rewriteHost: true
 EOF
 
