@@ -31,9 +31,7 @@ install_hysteria() {
         bash <(curl -fsSL https://get.hy2.sh/)
     fi
 }
-rm -f /etc/hysteria/server.yaml
-rm -f /etc/hysteria/server.key
-rm -f /etc/hysteria/server.crt
+
 # ========== 服务端部署 ==========
 deploy_server() {
     check_deps
@@ -61,8 +59,9 @@ auth:
 
 tun:
   name: hys-tun
-  address: 10.10.10.1/24
   mtu: ${TUN_MTU}
+  address:
+    ipv4: 10.10.10.1/30
 
 masquerade:
   type: proxy
@@ -72,7 +71,7 @@ masquerade:
 EOF
 
     # 系统转发
-    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv4.ip_forward=1 >/dev/null
     grep -q "^net.ipv4.ip_forward=1" /etc/sysctl.conf || echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 
     # 出口网卡
@@ -80,14 +79,14 @@ EOF
     echo "[*] 出口网卡: ${OUT_IF}"
 
     # 先清理旧规则，避免重复添加
-    iptables -t nat -D POSTROUTING -s 10.10.10.0/24 -o ${OUT_IF} -j MASQUERADE 2>/dev/null || true
-    iptables -D FORWARD -s 10.10.10.0/24 -j ACCEPT 2>/dev/null || true
-    iptables -D FORWARD -d 10.10.10.0/24 -j ACCEPT 2>/dev/null || true
+    iptables -t nat -D POSTROUTING -s 10.10.10.0/30 -o ${OUT_IF} -j MASQUERADE 2>/dev/null || true
+    iptables -D FORWARD -s 10.10.10.0/30 -j ACCEPT 2>/dev/null || true
+    iptables -D FORWARD -d 10.10.10.0/30 -j ACCEPT 2>/dev/null || true
 
     # NAT
-    iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o ${OUT_IF} -j MASQUERADE
-    iptables -A FORWARD -s 10.10.10.0/24 -j ACCEPT
-    iptables -A FORWARD -d 10.10.10.0/24 -j ACCEPT
+    iptables -t nat -A POSTROUTING -s 10.10.10.0/30 -o ${OUT_IF} -j MASQUERADE
+    iptables -A FORWARD -s 10.10.10.0/30 -j ACCEPT
+    iptables -A FORWARD -d 10.10.10.0/30 -j ACCEPT
 
     # 持久化
     if ! command -v netfilter-persistent &>/dev/null; then
@@ -137,9 +136,16 @@ tls:
 
 tun:
   name: hys-tun
-  address: 10.10.10.2/24
   mtu: ${TUN_MTU}
-  route: all
+  address:
+    ipv4: 10.10.10.2/30
+  route:
+    ipv4: [0.0.0.0/0]
+
+dns:
+  servers:
+    - 8.8.8.8
+    - 1.1.1.1
 
 masquerade:
   type: proxy
@@ -148,7 +154,7 @@ masquerade:
     rewriteHost: true
 EOF
 
-    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv4.ip_forward=1 >/dev/null
     grep -q "^net.ipv4.ip_forward=1" /etc/sysctl.conf || echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 
     # 先清理旧规则，避免重复添加
