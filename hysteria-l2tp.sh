@@ -7,10 +7,20 @@ DEFAULT_L2TP_SUBNET="172.28.42.0/24"
 TUN_MTU=1300
 
 # ========== 检查 root ==========
-if [[ $EUID -ne 0 ]]; then
+if [[ $(id -u) -ne 0 ]]; then
     echo "请使用 sudo 运行此脚本"
     exit 1
 fi
+
+# ========== 检查依赖 ==========
+check_deps() {
+    for dep in curl openssl iptables; do
+        if ! command -v $dep &>/dev/null; then
+            echo "[*] 安装依赖: $dep..."
+            apt-get update -qq && apt-get install -y -qq $dep
+        fi
+    done
+}
 
 # ========== 安装 Hysteria ==========
 install_hysteria() {
@@ -24,6 +34,7 @@ install_hysteria() {
 
 # ========== 服务端部署 ==========
 deploy_server() {
+    check_deps
     install_hysteria
     mkdir -p /etc/hysteria
 
@@ -60,24 +71,28 @@ EOF
 
     # 系统转发
     sysctl -w net.ipv4.ip_forward=1
-    grep -q "net.ipv4.ip_forward=1" /etc/sysctl.conf || echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+    grep -q "^net.ipv4.ip_forward=1" /etc/sysctl.conf || echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 
     # 出口网卡
     OUT_IF=$(ip route get 1.1.1.1 | awk '{print $5; exit}')
     echo "[*] 出口网卡: ${OUT_IF}"
 
+    # 先清理旧规则，避免重复添加
+    iptables -t nat -D POSTROUTING -s 10.10.10.0/24 -o ${OUT_IF} -j MASQUERADE 2>/dev/null || true
+    iptables -D FORWARD -s 10.10.10.0/24 -j ACCEPT 2>/dev/null || true
+    iptables -D FORWARD -d 10.10.10.0/24 -j ACCEPT 2>/dev/null || true
+
     # NAT
-    iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o ${OUT_IF} -j MASQUERADE 2>/dev/null || true
-    iptables -A FORWARD -s 10.10.10.0/24 -j ACCEPT 2>/dev/null || true
-    iptables -A FORWARD -d 10.10.10.0/24 -j ACCEPT 2>/dev/null || true
+    iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o ${OUT_IF} -j MASQUERADE
+    iptables -A FORWARD -s 10.10.10.0/24 -j ACCEPT
+    iptables -A FORWARD -d 10.10.10.0/24 -j ACCEPT
 
     # 持久化
-    if command -v netfilter-persistent &>/dev/null; then
-        netfilter-persistent save
-    else
-        apt-get update -qq && apt-get install -y iptables-persistent -qq
-        netfilter-persistent save
+    if ! command -v netfilter-persistent &>/dev/null; then
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq && apt-get install -y -qq iptables-persistent || apt-get install -y -qq netfilter-persistent 2>/dev/null || true
     fi
+    command -v netfilter-persistent &>/dev/null && netfilter-persistent save || { apt-get install -y -qq iptables-persistent && netfilter-persistent save; } 2>/dev/null || true
 
     # systemd
     cat > /etc/systemd/system/hysteria-server.service <<EOF
@@ -101,6 +116,7 @@ EOF
 
 # ========== 客户端部署 ==========
 deploy_client() {
+    check_deps
     install_hysteria
     read -p "请输入海外 VPS 的 IP 地址: " VPS_IP
     if [[ -z "$VPS_IP" ]]; then
@@ -131,14 +147,24 @@ masquerade:
 EOF
 
     sysctl -w net.ipv4.ip_forward=1
-    grep -q "net.ipv4.ip_forward=1" /etc/sysctl.conf || echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+    grep -q "^net.ipv4.ip_forward=1" /etc/sysctl.conf || echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+
+    # 先清理旧规则，避免重复添加
+    iptables -t nat -D POSTROUTING -s ${DEFAULT_L2TP_SUBNET} -o hys-tun -j MASQUERADE 2>/dev/null || true
+    iptables -D FORWARD -s ${DEFAULT_L2TP_SUBNET} -j ACCEPT 2>/dev/null || true
+    iptables -D FORWARD -d ${DEFAULT_L2TP_SUBNET} -j ACCEPT 2>/dev/null || true
 
     # L2TP 流量导入
-    iptables -t nat -A POSTROUTING -s ${DEFAULT_L2TP_SUBNET} -o hys-tun -j MASQUERADE 2>/dev/null || true
-    iptables -A FORWARD -s ${DEFAULT_L2TP_SUBNET} -j ACCEPT 2>/dev/null || true
-    iptables -A FORWARD -d ${DEFAULT_L2TP_SUBNET} -j ACCEPT 2>/dev/null || true
+    iptables -t nat -A POSTROUTING -s ${DEFAULT_L2TP_SUBNET} -o hys-tun -j MASQUERADE
+    iptables -A FORWARD -s ${DEFAULT_L2TP_SUBNET} -j ACCEPT
+    iptables -A FORWARD -d ${DEFAULT_L2TP_SUBNET} -j ACCEPT
 
-    command -v netfilter-persistent &>/dev/null && netfilter-persistent save || { apt-get update -qq && apt-get install -y iptables-persistent -qq && netfilter-persistent save; }
+    # 持久化
+    if ! command -v netfilter-persistent &>/dev/null; then
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq && apt-get install -y -qq iptables-persistent || apt-get install -y -qq netfilter-persistent 2>/dev/null || true
+    fi
+    command -v netfilter-persistent &>/dev/null && netfilter-persistent save || { apt-get install -y -qq iptables-persistent && netfilter-persistent save; } 2>/dev/null || true
 
     cat > /etc/systemd/system/hysteria-client.service <<EOF
 [Unit]
@@ -146,7 +172,7 @@ Description=Hysteria Client
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/hysteria -c /etc/hysteria/client.yaml
+ExecStart=/usr/local/bin/hysteria client -c /etc/hysteria/client.yaml
 Restart=on-failure
 RestartSec=5s
 
